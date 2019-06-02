@@ -95,8 +95,8 @@ function restoreBrick(){
 	height = 40;
 }
 function draw(){
-    var backgroundGray = 'rgba(200, 200, 200, 0.9)';	
-    var backgroundBalls = 'rgba(200, 200, 200, 0.3)';		
+    var backgroundGray = 'rgba(240, 240, 240, 0.9)';	
+    var backgroundBalls = 'rgba(240, 240, 240, 0.4)';		
 				
 	ctx.fillStyle = backgroundGray;
 	ctx.fillRect(0, 0, canvas.width, 340);
@@ -165,7 +165,7 @@ function draw(){
 	else{
 		window.cancelAnimationFrame(raf);
 		// gameOver = false;
-		ctx.fillStyle = 'rgba(75, 75, 75, 1)';
+		ctx.fillStyle = 'rgba(200, 200, 200, 1)';
 		// ctx.clearRect(0, 0, canvas.width, canvas.height);
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 		var text = 'Game Over!';
