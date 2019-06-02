@@ -61,9 +61,6 @@ var brick = {
 }
 function start(){
 	canvas = document.getElementById("canvas");
-	// body.height = $(document).height();
-	// canvas.width = $(document).width() - 30;
-	// canvas.height = $(document).height() - 30;
 	ctx = canvas.getContext("2d");
 
 	// console.log("Reached inside start()");
@@ -98,28 +95,24 @@ function restoreBrick(){
 	height = 40;
 }
 function draw(){
-							
+    var backgroundGray = 'rgba(200, 200, 200, 0.9)';	
+    var backgroundBalls = 'rgba(200, 200, 200, 0.3)';		
 				
-	ctx.fillStyle = 'rgba(75, 75, 75, 0.9)';
+	ctx.fillStyle = backgroundGray;
 	ctx.fillRect(0, 0, canvas.width, 340);
 
-	ctx.fillStyle = 'rgba(75, 75, 75, 0.9)';
 	ctx.fillRect(0, 460, canvas.width, 40);
 
-	ctx.fillStyle = 'rgba(75, 75, 75, 0.9)';
 	ctx.fillRect(0, 340, 90, 120);
 
-	ctx.fillStyle = 'rgba(75, 75, 75, 0.9)';
 	ctx.fillRect(210, 340, 90, 160);
 
-	ctx.fillStyle = 'rgba(75, 75, 75, 0.3)';
+	ctx.fillStyle = backgroundBalls;
 	ctx.fillRect(90, 340, 120, 120);
 
 	ctx.save();
 	ctx.translate(150, 400);
 				
-				// if(!clock){
-
 	ctx.rotate(theta);
 	ctx.save();
 	ctx.translate(50, 0);
@@ -273,15 +266,3 @@ document.addEventListener('click', function(evt) {
 	  console.log('clicked outside rect');
 	}   
 }, false);
-			// function makeBrick(){
-				
-
-			// }
-			// (function () {
-   //  var width = window.innerWidth;
-	// window.addEventListener('resize', function () {
-	//    if (window.innerWidth !== width) {
-	//        window.location.reload(true);
-	//        }
-	//      });
-	//     })();
