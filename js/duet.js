@@ -1,6 +1,22 @@
-var canvas, raf, ctx, clock = true, theta = 0, canAttack = true, bricks = [], gameOver = false;
-var noOfBricksPassed = 0, score = 0, maxBricks = 1;
+var canvas, raf, ctx, clock = true, theta = 0, bricks = [], gameOver = false, flag = false;
+var noOfBricksPassed = 0, score = 0, maxBricks = 1, scoreInteger = 0, landmarkBricks = 5, landmarkScoreForSpeed = 1, speed = 3;
 var blue = 'rgba(100, 100, 255, 1)', pink = 'rgba(255, 100, 100, 1)', red = 'rgba(250, 50, 50, 0.9)', green = 'rgba(50, 250, 50, 0.9)';
+var backgroundGray = 'rgba(200, 200, 200, 0.9)';
+var scoreText;
+var noOfBricksAlive = 0;
+
+function init(){
+	canvas = document.getElementById("canvas");
+	ctx = canvas.getContext("2d");
+	scoreText = document.getElementById("score-text");
+
+	document.addEventListener("keydown", arrowControl);
+
+	// console.log("Reached inside start()");
+	// draw();
+	raf = window.requestAnimationFrame(draw);
+	
+}
 
 class Ball{
 	constructor(color, positive){
@@ -8,12 +24,12 @@ class Ball{
 		this.x = 0;
 		this.y = 0;
 		this.radius = 10;
-		this.pos = positive;
+		this.positive = positive;
 		// draw();
 	}
 	draw(centerX, centerY, centerRadius){
 		ctx.save();
-		if(this.pos){
+		if(this.positive){
 			this.x = centerX + centerRadius * Math.cos(theta);
 			this.y = centerY - centerRadius * Math.sin(theta);
 		}
@@ -59,7 +75,7 @@ class Brick extends Obstacle{
 		}
 		this.x = Math.random()*200 + 50 - this.width/2;
 		this.y = 5;
-		this.vy = 5;
+		this.vy = 3;
 		this.alive = true;
 		// draw();
 
@@ -80,7 +96,9 @@ class Brick extends Obstacle{
 	isAlive(){
 		
 		if(this.y + this.vy + this.height/2 >= canvas.height){
-			++noOfBricksPassed;
+			// console.log("Brick not alive in isAlive");
+			// ++noOfBricksPassed;
+			// canAttack = true;
 			return false;
 		}
 		else{
@@ -93,23 +111,33 @@ class Brick extends Obstacle{
 	update(){
 		this.y += this.vy;
 	}
+	updateToSpeed(vy){
+		this.vy = vy;
+	}
 
 }
 class Button{
-	constructor(text, enabled){
+	constructor(text, action = 'none'){
 		this.text = text;
-		this.enabled = enabled;
 		ctx.save();
 		ctx.font = '400 40px Kremlin Pro Web';
 		this.width = ctx.measureText(this.text).width;
 		this.x = canvas.width/2 - this.width/2;
 		this.height = 50;
+		this.start = false;
+		this.restart = false;
+
+		switch(action){
+			case 'start' : this.start = true; break;
+			case 'restart' : this.restart = true; break;
+		}
+		
 	}
 	draw(backGroundColor, noOfButtons = 1, number = 1){
 		if(noOfButtons == 1)
-			this.y = int(canvas.height/2 - this.height/2);
+			this.y = canvas.height/2 - this.height/2;
 		else
-			this.y = int(canvas.height/2 - this.height/2 + (2*number - (noOfButtons + 1)) * this.height * 1.5);
+			this.y = canvas.height/2 - this.height/2 + (2*number - (noOfButtons + 1)) * this.height * 3 / 2;
 		ctx.fillStyle = 'rgba(250, 250, 250, 0.6)';
 		ctx.fillRect(this.x, this.y, this.width, this.height);
 
@@ -118,10 +146,30 @@ class Button{
 		ctx.fillText(this.text, this.x, this.y + this.height - 10);
 		ctx.restore();
 
-		if(this.enabled){
-			document.addEventListener('click', this.clickRestart);
+		if(this.restart){
+			document.addEventListener('click', this.click.bind(this));
 		}
+		// else{
+			
+		// }
 
+	}
+
+	click(e){
+		
+		if(isInside(getMousePos(canvas, e), this)){
+			
+			if(gameOver && this.restart){
+				document.removeEventListener('click', this.click);
+				restart();
+			}
+			// else if(Start.start){
+			// 	console.log("Inside click start action");
+			// }
+			// else{
+			// 	console.log("Not reached inside restart");
+			// }
+		}
 	}
 
 }
@@ -135,19 +183,44 @@ function getMousePos(canvas, event) {
 	
 //Function to check whether a point is inside a rectangle
 function isInside(pos, rect){
-  return pos.x > rect.x && pos.x < rect.x+rect.width && pos.y < rect.y+rect.height && pos.y > rect.y
+	
+	// console.log((pos.x > x && pos.x < x+width && pos.y < y+height && pos.y > y) + " Returned in isInside");
+    return (pos.x > rect.x && pos.x < rect.x+rect.width && pos.y < rect.y+rect.height && pos.y > rect.y);
 }
-document.addEventListener('click', function(evt) {
-	var mousePos = getMousePos(canvas, evt);
-	if(gameOver)
-	if (isInside(mousePos, playAgain)) {
+
+function restart(){
+	
+	
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+	// bricks.length = 0;
+	theta = 0;
+	landMark = 5;
+	maxBricks = 1;
+	noOfBricksAlive = 0;
+
+	gameOver = false;
+	score = 0;
+	scoreInteger = 0;
+	landmarkBricks = 5;
+	landmarkScoreForSpeed = 1;
+	speed = 3;
+
+	document.addEventListener("keydown", arrowControl);
+
+	raf = window.requestAnimationFrame(draw);
+}
+// document.addEventListener('click', function(evt) {
+// 	var mousePos = getMousePos(canvas, evt);
+// 	if(gameOver)
+// 	if (isInside(mousePos, playAgain)) {
 		   
-	  restart();
-   }
-	else{
-	  console.log('clicked outside rect');
-	}   
-}, false);
+// 	  restart();
+//    }
+// 	else{
+// 	  console.log('clicked outside rect');
+// 	}   
+// }, false);
 // var playAgain = {
 // 	text : 'Play Again',
 // 	x: 0,
@@ -207,16 +280,8 @@ document.addEventListener('click', function(evt) {
 // 		ctx.fillRect(this.x, this.y, this.width, this.height);
 // 	}
 // }
-function start(){
-	canvas = document.getElementById("canvas");
-	ctx = canvas.getContext("2d");
 
-	// console.log("Reached inside start()");
-	// draw();
-	raf = window.requestAnimationFrame(draw);
-	
-}
-window.onkeydown = function (e) {
+function arrowControl(e) {
 	var code = e.keyCode ? e.keyCode : e.which;
 	if (code === 37) { //left key
 		// console.log("Left key pressed");
@@ -229,19 +294,7 @@ window.onkeydown = function (e) {
 		clock = true;
 	}
 };
-// function restart(){
-// 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-// 	restoreBrick();
-// 	attacking = false;
-// 	gameOver = false;
-// 	raf = window.requestAnimationFrame(draw);
-// }
-// function restoreBrick(){
-// 	brick.x = 200;
-// 	brick.y = 5;
-// 	width =  80;
-// 	height = 40;
-// }
+
 function draw(){
 	
 	drawBackground();
@@ -252,40 +305,128 @@ function draw(){
 	rishav.draw(150, 400, 50);
 	phoebe.draw(150, 400, 50);
 
-	for(let i = 0; i < maxBricks; ++i){
-		bricks.push(new Brick());
-		if(i == 0){
-			canAttack = true;
+	score += 1/100;
+
+	console.log('Score : ' + Math.floor(score));
+	if(score >= (scoreInteger + 1)){
+		// console.log('Inside setting, Score : ' + score);
+		scoreText.innerHTML = "Score : " + Math.floor(score);
+		++scoreInteger;
+	}
+	var deletedBrick;
+
+	if(score >= landmarkBricks){
+		landmarkBricks += 5;
+		++maxBricks;
+	}
+	if(score >= landmarkScoreForSpeed){
+		console.log("landmarkScoreForSpeed : " + landmarkScoreForSpeed + " Reached");
+		speed += 0.1;
+		bricks.forEach(function(brick, index){
+			console.log("Entered for brick : " + (index + 1));
+			brick.updateToSpeed(speed);
+			console.log("Speed updated to : " + brick.vy.toFixed(2) + " for brick : " + (index + 1));
+		});
+		landmarkScoreForSpeed += 1;
+	}
+	// if(flag){
+	// 	console.log("noOfBricksAlive < maxBricks : " + noOfBricksAlive < maxBricks);
+	// 	console.log("noOfBricksAlive >= 0 : "+ noOfBricksAlive >= 0);
+	// 	console.log("!gameOver : " + !gameOver);
+	// }
+
+	//Generate the maxumimum no of bricks at a time.
+	if(noOfBricksAlive < maxBricks && noOfBricksAlive >= 0 && !gameOver){
+		// console.log("noOfBricksAlive : " + noOfBricksAlive);
+		// if(noOfBricksAlive > 0){
+		// 	console.log("bricks[noOfBricksAlive-1].y : " + bricks[noOfBricksAlive-1].y);
+		// 	console.log("bricks[noOfBricksAlive-1].y >= canvas.height/2 : " + bricks[noOfBricksAlive-1].y >= canvas.height/2);
+		// }
+		if(noOfBricksAlive > 0 && bricks[noOfBricksAlive-1].y >= canvas.height/2){
+			// console.log("bricks[noOfBricksAlive-1].y before Generate: " + bricks[noOfBricksAlive-1].y);
+			
+			bricks.push(new Brick());
+			++noOfBricksAlive;
 		}
-		else if(bricks[i-1].y >= canvas.height/3){
-			canAttack = true;
-		}
-		if(canAttack){
-			bricks[i].draw();
-			if(bricks[i].isAlive()){
-				bricks[i].update();
-			}
-			else{
-				bricks.splice(0, i);
-				console.log(bricks.length);
-			}
-		}
-		if(circleCollidesRectangle(rishav, bricks[i]) || circleCollidesRectangle(phoebe, bricks[i])){
+		else if(noOfBricksAlive == 0){
+			bricks.push(new Brick());
+			++noOfBricksAlive;
+			// console.log("Since noOfBricksAlive is 0, noOfBricksAlive was incremented to " + noOfBricksAlive);
+		}			
+		
+	}
+	// console.log("bricks[0].isAlive() : " + bricks[0].isAlive());
+	if(!bricks[0].isAlive()){
+		deletedBrick = bricks.splice(0, 1);
+		--noOfBricksAlive;
+		console.log("One brick deleted");
+		flag = true;
+	}
+	
+	if(!gameOver){
+		// if(flag)
+		// 	console.log("Inside !gameOver");
+		bricks.forEach(function(brick, index){
+			brick.update();
+			brick.draw();
+		// if(flag)	
+			// console.log("requestAnimationFrame requested");	
+		});
+		raf = window.requestAnimationFrame(draw);
+	}
+	bricks.forEach(function(brick){
+		if(circleCollidesRectangle(rishav, brick) || circleCollidesRectangle(phoebe, brick)){
+			window.cancelAnimationFrame(raf);
 			gameOver = true;
+			console.log("Game is Over!");
 			ending();
 		}
-		else{
-			gameOver = false;
-			raf = window.requestAnimationFrame();
-		}
-	}
+	});
+	// if(!gameOver){
+	// 		// gameOver = false;
+			
+	// 		bricks.forEach(function(brick, index){
+	// 			console.log("Brick number : " + index);
+			
+	// 			// bricks[i].draw();
+	// 			if(brick.isAlive()){
+	// 				brick.update();
+	// 				brick.draw();
+	// 			}
+	// 			else{
+	// 				var dummyBrick = bricks.pop(brick);
+	// 				console.log("Bricks length : " + bricks.length / Object.keys(bricks).length);
+	// 				--noOfBricksAlive;
+	// 			}
+			
+	// 			if(circleCollidesRectangle(rishav, brick) || circleCollidesRectangle(phoebe, brick)){
+	// 				gameOver = true;
+	// 				ending();
+	// 			}
+	// 			else{
+	
+	// 				raf = window.requestAnimationFrame(draw);
+	// 			}
+	// 		})
+			
+	// }
+	
 }
 function ending(){
-	gameOver = new Button('Game Over!', false);
-	playAgain = new Button('Play Again', true);
+	bricks = [];
+	noOfBricksAlive = 0;
+	document.removeEventListener("keydown", arrowControl);
+	console.log("Inside ending and animation canceled");
+	ctx.save();
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	ctx.fillStyle = backgroundGray;
+	ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-	gameOver.draw(red, 2, 1);
-	playAgain.draw(green, 2, 2);
+	GameOver = new Button('Game Over!');
+	PlayAgain = new Button('Play Again', 'restart');
+
+	GameOver.draw(red, 2, 1);
+	PlayAgain.draw(green, 2, 2);
 }
 
 	
@@ -345,7 +486,7 @@ function ending(){
 				
 
 function drawBackground(){
-	var backgroundGray = 'rgba(200, 200, 200, 0.9)';	
+	
 	var backgroundBalls = 'rgba(200, 200, 200, 0.4)';		
 				
 	ctx.save();
@@ -393,7 +534,7 @@ function drawBackground(){
 // 	var dy = distY - rh / 2;
 // 	return (dx * dx + dy * dy <= (cr * cr));
 // }
-function circlesCollidesRectangle(Circle, Rectangle){
+function circleCollidesRectangle(Circle, Rectangle){
 	var cx = Circle.x;
 	var cy = Circle.y;
 	var cr = Circle.radius;
