@@ -1,26 +1,86 @@
-var canvas, raf, ctx, clock, theta, bricks = [], gameOver, flags;
-var noOfBricksPassed, score, maxBricks, scoreInteger, landmarkScoreForBricks, landmarkScoreForSpeed, speed;
+var canvas, raf, ctx, clock, theta, bricks = [], gameOver = false, flags;
+var noOfBricksPassed, score, maxBricks, landmarkScoreForBricks, landmarkScoreForSpeed, speed;
 var blue = 'rgba(100, 100, 255, 1)', pink = 'rgba(255, 100, 100, 1)', red = 'rgba(250, 50, 50, 0.9)', green = 'rgba(50, 250, 50, 0.9)';
 var gray = 'rgba(200, 200, 200, 0.9)', white = 'rgba(250, 250, 250, 0.9)', black = 'rgba(10, 10, 10, 0.8)';
 var scoreText;
 var noOfBricksAlive;
+var singlePlayer = true;
+var name, playerAName, playerBName, canStart = false;
+var playerNumber = 2, playerRank = 2, scoreHistory = [[1, 1, 'noobmaster69', Infinity]];
+var pauseButton, resumeButton, paused = false, started = false, ended = false, turnA;
+var Start, PlayAgain, Play, GameOver, Name, PlayerA, PlayerB, Duet;
 
 function load(){
 	canvas = document.getElementById("canvas");
 	ctx = canvas.getContext("2d");
 	scoreText = document.getElementById("score-text");
+	singlePlayerDiv = document.getElementById("single-player-div");
+	multiPlayerDiv = document.getElementById("multi-player-div");
+	scoreboard = document.getElementById("scoreboard");	
+	pauseButton = document.getElementById("pause-button");
+	resumeButton = document.getElementById("resume-button");
 
 	ctx.save();
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	ctx.fillStyle = black;
+	ctx.fillStyle = gray;
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
 	ctx.restore();
-	// console.log("Reached inside start()");
-	// draw();
-	Start = new Button('Start', 'start');
+
+	Start = new Button('Start!', 'start');
 	Start.draw(green);
 	// raf = window.requestAnimationFrame(draw);
 	
+}
+function submit(){
+	if(!started || ended){
+		if(ended){
+			if(PlayAgain)
+				if(PlayAgain.drew)
+					PlayAgain.clear();
+			if(Play)
+				if(Play.drew)
+					Play.clear();
+			if(GameOver)
+				if(GameOver.drew)
+					GameOver.clear();
+
+			Start = new Button("Start", 'restart');
+			Start.draw(green);
+		}
+		if(singlePlayer){
+			if(PlayerA)
+				if(PlayerA.drew)
+					PlayerA.clear();
+
+			if(PlayerB)
+				if(PlayerB.drew)
+					PlayerB.clear();
+
+			name = document.getElementById("name").value;
+			Name = new Button(name);
+			Duet = new Button("Duet");
+			Name.draw(black, 3, 1);
+			Duet.draw(black, 3, 3);
+		}
+		else{
+			turnA = true;
+			playerAName = document.getElementById("player-A-name").value;
+			playerBName = document.getElementById("player-B-name").value;
+
+			if(Name)
+				if(Name.drew)
+					Name.clear();
+			if(Duet)
+				if(Duet.drew)
+					Duet.clear();		
+
+			PlayerA = new Button("► " + playerAName);
+			PlayerB = new Button(playerBName);
+			PlayerA.draw(black, 3, 1);
+			PlayerB.draw(black, 3, 3);
+		}
+	}
+	canStart = true;
 }
 function start(){
 
@@ -30,11 +90,37 @@ function start(){
 function restart(){
 	
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-	init();	
+	
+	var prevName = scoreboard.rows[playerRank].cells[1].innerHTML;
+	console.log("Previous name in scoreboard is : " + prevName);
+	scoreboard.rows[playerRank].cells[1].innerHTML = prevName.slice(0, -1);
+	++playerNumber;
+	playerRank = playerNumber;
+	
+	init();
 	raf = window.requestAnimationFrame(draw);
 }
+function pause(){
+	if(started){
+		window.cancelAnimationFrame(raf);
+		paused = true;
+		pauseButton.disabled = true;
+		resumeButton.disabled = false;
+		console.log("Paused");
+	}
+}
+function resume(){
+	if(started && paused){
+		paused = false;
+		pauseButton.disabled = false;
+		resumeButton.disabled = true;
+		console.log("Resumed");
+		raf = window.requestAnimationFrame(draw);
+	}
+}
 function init(){
+	started = true;
+
 	theta = 0;
 	maxBricks = 1;
 	noOfBricksAlive = 0;
@@ -45,7 +131,6 @@ function init(){
 
 	gameOver = false;
 	score = 0;
-	scoreInteger = 0;
 	landmarkScoreForBricks = 4;
 	landmarkScoreForSpeed = 2;
 	speed = 3;
@@ -53,12 +138,51 @@ function init(){
 	clock = true;
 	flags = [true, true];
 
-	scoreText.innerHTML = "Score : " + Math.floor(score);
+	var newRow = document.createElement("tr");
 
-	document.removeEventListener("keydown", arrowControl);
+	var newRank = document.createElement("td");
+	var newName = document.createElement("td");
+	var newScore = document.createElement("td");
+
+	newRank.innerHTML = playerRank;	
+	newScore.innerHTML = score;
+
+	if(singlePlayer){
+		newName.innerHTML =  name + '*';
+		scoreHistory.push([playerNumber, playerRank, name, score]);
+	}
+	else{
+		if(turnA){
+			newName.innerHTML = playerAName + '*';
+			scoreHistory.push([playerNumber, playerRank, playerAName, score]);			
+		}
+		else{
+			newName.innerHTML = playerBName + '*';
+			scoreHistory.push([playerNumber, playerRank, playerBName, score]);					
+		}
+	}
+
+	newRow.appendChild(newRank);
+	newRow.appendChild(newName);
+	newRow.appendChild(newScore);	
+
+	scoreboard.appendChild(newRow);
+
 	document.addEventListener("keydown", arrowControl);
 }
-
+function toggleButton(id){
+	switch(id){
+		case 1: singlePlayer = true;
+			singlePlayerDiv.style.display = "block";
+			multiPlayerDiv.style.display = "none";
+			break;
+		case 2: singlePlayer = false;
+			singlePlayerDiv.style.display = "none";
+			multiPlayerDiv.style.display = "block";
+			break;
+		default: console.log("id is not either 1 or 2 in toggleButton"); break;
+	}
+}
 class Ball{
 	constructor(color, positive){
 		this.color = color;
@@ -170,8 +294,10 @@ class Brick extends Obstacle{
 }
 class Button{
 	constructor(text, action = 'none'){
-		this.text = text;
+
 		ctx.save();
+		this.text = text;
+
 		ctx.font = '400 40px Kremlin Pro Web';
 		this.width = ctx.measureText(this.text).width;
 		this.x = canvas.width/2 - this.width/2;
@@ -183,14 +309,23 @@ class Button{
 			case 'start' : this.start = true; break;
 			case 'restart' : this.restart = true; break;
 		}
-		
+			
 	}
 	draw(color, noOfButtons = 1, number = 1){
+	
+		// ctx.clearRect(this.x, this.y, this.width, this.height);
+		// ctx.clearRect(0, this.y, canvas.width, this.height);
+		ctx.fillStyle = gray;
+		ctx.fillRect(0, this.y, canvas.width, this.height);
 		if(noOfButtons == 1)
 			this.y = canvas.height/2 - this.height/2;
 		else
 			this.y = canvas.height/2 - this.height/2 + (2*number - (noOfButtons + 1)) * this.height * 3 / 2;
-		ctx.fillStyle = white;
+		if(this.start || this.restart)
+			ctx.fillStyle = white;
+		else
+			ctx.fillStyle = gray;
+		ctx.clearRect(this.x, this.y, this.width, this.height);		
 		ctx.fillRect(this.x, this.y, this.width, this.height);
 
 		ctx.fillStyle = color;
@@ -198,11 +333,19 @@ class Button{
 		ctx.fillText(this.text, this.x, this.y + this.height - 10);
 		ctx.restore();
 
+		this.drew = true;
+
 		if(this.restart || this.start){
 			document.addEventListener('click', this.click.bind(this));
 		}		
 	}
-
+	clear(){
+		ctx.clearRect(this.x, this.y, this.width, this.height);
+		ctx.save();
+		ctx.fillStyle = gray;
+		ctx.fillRect(this.x, this.y, this.width, this.height);
+		ctx.restore();
+	}
 	click(e){
 		
 		if(isInside(getMousePos(canvas, e), this)){
@@ -212,15 +355,14 @@ class Button{
 				restart();
 			}
 			else if(this.start){
-				document.removeEventListener('click', this.click);
-				start();
+				if(canStart){
+					document.removeEventListener('click', this.click);
+					start();
+				}
+				else{
+					alert("Please enter your name before starting game");
+				}
 			}
-			// else if(Start.start){
-			// 	console.log("Inside click start action");
-			// }
-			// else{
-			// 	console.log("Not reached inside restart");
-			// }
 		}
 	}
 
@@ -293,18 +435,28 @@ function draw(){
 	rishav.draw(150, 400, 58);
 	phoebe.draw(150, 400, 58);
 
-
 	score += 1/100;
+	scoreText.innerHTML = "Score : " + Math.floor(score);
+	if(flags[1]){
+		console.log("scoreHistory is : " + scoreHistory);
+		flags[1] = false;		
+	}
+
+	scoreHistory[playerRank - 1][3] = Math.floor(score);
+
+	// console.log("Score is greater in scoreHistory ?: " + (score >= scoreHistory[playerNumber - 1][2]));
+	if(score >= scoreHistory[playerRank - 2][3]){
+		console.log("Current score was greater than previous score");
+		swapScoreHistory(playerRank - 1, playerRank - 2);	
+		swapTableTexts(playerRank, playerRank - 1);
+		--playerRank;
+	}
+	scoreboard.rows[playerRank].cells[2].innerHTML = Math.floor(score);
 
 	// console.log('Score : ' + Math.floor(score));
 	if(flags[0]){
-		console.log('Bricks Passed : ' + noOfBricksPassed);
+		// console.log('Bricks Passed : ' + noOfBricksPassed);
 		flags[0] = false;
-	}
-	if(score >= (scoreInteger + 1)){
-		// console.log('Inside setting, Score : ' + score);
-		scoreText.innerHTML = "Score : " + Math.floor(score);
-		++scoreInteger;
 	}
 	
 
@@ -315,21 +467,12 @@ function draw(){
 		++maxBricks;
 	}
 	if(score >= landmarkScoreForSpeed){
-		console.log("landmarkScoreForSpeed : " + landmarkScoreForSpeed + " Reached");
+		// console.log("landmarkScoreForSpeed : " + landmarkScoreForSpeed + " Reached");
 		// flags[1] = false;
 		speed += 0.1;
 		landmarkScoreForSpeed += 1;
 	}
-	// bricks.forEach(function(brick, index){
-	// 		// console.log("Entered for brick : " + (index + 1));
-	// 		brick.updateToSpeed(speed);
-			
-	// 	});
-	// if(flag){
-	// 	console.log("noOfBricksAlive < maxBricks : " + noOfBricksAlive < maxBricks);
-	// 	console.log("noOfBricksAlive >= 0 : "+ noOfBricksAlive >= 0);
-	// 	console.log("!gameOver : " + !gameOver);
-	// }
+	console.log("Speed is : " + speed);
 
 	//Generate the maxumimum no of bricks at a time.
 	if(noOfBricksAlive < maxBricks && noOfBricksAlive >= 0 && !gameOver){
@@ -362,7 +505,7 @@ function draw(){
 		--noOfBricksAlive;
 		++noOfBricksPassed;
 		flags[0] = true;
-		console.log("One brick deleted");
+		// console.log("One brick deleted");
 	}
 	
 	if(!gameOver){
@@ -390,15 +533,46 @@ function ending(){
 	
 	ctx.save();
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	ctx.fillStyle = black;
+	ctx.fillStyle = gray;
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
 	ctx.restore();
 
-	GameOver = new Button('Game Over!');
-	PlayAgain = new Button('Play Again', 'restart');
+	started = false;
+	ended =  true;
 
-	GameOver.draw(red, 2, 1);
-	PlayAgain.draw(green, 2, 2);
+	console.log("scoreHistory is : " + scoreHistory);
+
+	if(singlePlayer){
+		GameOver = new Button('Game Over!');
+		PlayAgain = new Button('Play Again', 'restart');
+
+		GameOver.draw(red, 2, 1);
+		PlayAgain.draw(green, 2, 2);
+	}
+	else{
+
+		GameOver = new Button('Game Over!');
+		Play = new Button('Play', 'restart');
+		
+		if(turnA){
+			console.log("A's turn is over");
+			PlayerA = new Button(playerAName);
+			PlayerB = new Button("► " + playerBName);
+			turnA = false;
+		}
+		else{
+			console.log("B's turn is over");
+			PlayerA = new Button("► " + playerAName);
+			PlayerB = new Button(playerBName);
+			turnA = true;
+		}
+
+		GameOver.draw(red, 4, 1);
+		PlayerA.draw(black, 4, 2);
+		Play.draw(green, 4, 3);
+		PlayerB.draw(black, 4, 4);
+	}
+
 	// else{
 	// 	window.cancelAnimationFrame(raf);
 	// 	// gameOver = false;
@@ -424,10 +598,10 @@ function ending(){
 
 function drawBackground(){
 	
-	var backgroundBalls = 'rgba(10, 10, 10, 0.4)';		
+	var backgroundBalls = 'rgba(200, 200, 200, 0.4)';		
 				
 	ctx.save();
-	ctx.fillStyle = black;
+	ctx.fillStyle = gray;
 	ctx.fillRect(0, 0, canvas.width, 340);
 
 	ctx.fillRect(0, 460, canvas.width, 40);
@@ -471,6 +645,18 @@ function circleCollidesRectangle(Circle, Rectangle){
 	var dx = distX - rw / 2;
 	var dy = distY - rh / 2;
 	return (dx * dx + dy * dy <= (cr * cr));
+}
+function swapScoreHistory(i, j){
+	var arr = [0, 2, 3];
+	arr.forEach(function(value){
+		[scoreHistory[i][value], scoreHistory [j][value]] = [scoreHistory[j][value], scoreHistory [i][value]];
+	});
+}
+function swapTableTexts(i, j){
+	var arr = [1, 2];
+	arr.forEach(function(value){
+		[scoreboard.rows[i].cells[value].innerHTML, scoreboard.rows[j].cells[value].innerHTML] = [scoreboard.rows[j].cells[value].innerHTML, scoreboard.rows[i].cells[value].innerHTML]	
+	});
 }
 
 
