@@ -53,6 +53,8 @@ function init(){
 	clock = true;
 	flags = [true, true];
 
+	scoreText.innerHTML = "Score : " + Math.floor(score);
+
 	document.removeEventListener("keydown", arrowControl);
 	document.addEventListener("keydown", arrowControl);
 }
@@ -291,6 +293,7 @@ function draw(){
 	rishav.draw(150, 400, 58);
 	phoebe.draw(150, 400, 58);
 
+
 	score += 1/100;
 
 	// console.log('Score : ' + Math.floor(score));
@@ -303,6 +306,8 @@ function draw(){
 		scoreText.innerHTML = "Score : " + Math.floor(score);
 		++scoreInteger;
 	}
+	
+
 	var deletedBrick;
 
 	if(score >= landmarkScoreForBricks){
