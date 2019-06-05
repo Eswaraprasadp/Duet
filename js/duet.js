@@ -8,7 +8,7 @@ var singlePlayer = true;
 var name, playerAName, playerBName, canStart = false;
 var playerNumber = 2, playerRank = 2, scoreHistory = [[1, 1, 'noobmaster69', Infinity]];
 var pauseButton, resumeButton, paused = false, started = false, ended = false, turnA;
-var Start, PlayAgain, Play, GameOver, Name, PlayerA, PlayerB, Duet;
+var Start, Restart, PlayAgain, Play, GameOver, Name, PlayerA, PlayerB, Duet;
 
 function load(){
 	canvas = document.getElementById("canvas");
@@ -32,6 +32,7 @@ function load(){
 	
 }
 function submit(){
+	canStart = false;
 	if(!started || ended){
 		if(ended){
 			if(PlayAgain)
@@ -44,8 +45,8 @@ function submit(){
 				if(GameOver.drew)
 					GameOver.clear();
 
-			Start = new Button("Start", 'restart');
-			Start.draw(green);
+			Restart = new Button("Start", 'restart');
+			Restart.draw(green);
 		}
 		if(singlePlayer){
 			if(PlayerA)
@@ -57,33 +58,41 @@ function submit(){
 					PlayerB.clear();
 
 			name = document.getElementById("name").value;
-			Name = new Button(name);
-			Duet = new Button("Duet");
-			Name.draw(black, 3, 1);
-			Duet.draw(black, 3, 3);
+			if(name != "" && name != null){
+				canStart = true;
+				console.log("canStart : " + canStart);
+				Name = new Button(name);
+				Duet = new Button("Duet");
+				Name.draw(black, 3, 1);
+				Duet.draw(black, 3, 3);
+			}
 		}
 		else{
 			turnA = true;
 			playerAName = document.getElementById("player-A-name").value;
 			playerBName = document.getElementById("player-B-name").value;
 
-			if(Name)
-				if(Name.drew)
-					Name.clear();
-			if(Duet)
-				if(Duet.drew)
-					Duet.clear();		
+			if(playerAName != "" && playerBName != "" && playerAName != null && playerBName != null){
+				canStart = true;
+				console.log("canStart : " + canStart);
+				if(Name)
+					if(Name.drew)
+						Name.clear();
+				if(Duet)
+					if(Duet.drew)
+						Duet.clear();		
 
-			PlayerA = new Button("► " + playerAName);
-			PlayerB = new Button(playerBName);
-			PlayerA.draw(black, 3, 1);
-			PlayerB.draw(black, 3, 3);
+				PlayerA = new Button("► " + playerAName);
+				PlayerB = new Button(playerBName);
+				PlayerA.draw(black, 3, 1);
+				PlayerB.draw(black, 3, 3);
+			}
 		}
 	}
-	canStart = true;
 }
 function start(){
 
+	console.log("In start");
 	init();
 	raf = window.requestAnimationFrame(draw);
 }
@@ -309,6 +318,7 @@ class Button{
 			case 'start' : this.start = true; break;
 			case 'restart' : this.restart = true; break;
 		}
+		console.log("Button " + this.text + " Entered with start = " + this.start + " and restart = " + this.restart);
 			
 	}
 	draw(color, noOfButtons = 1, number = 1){
@@ -336,7 +346,8 @@ class Button{
 		this.drew = true;
 
 		if(this.restart || this.start){
-			document.addEventListener('click', this.click.bind(this));
+			this.clickEventListenerBind = this.click.bind(this);
+			document.addEventListener('click', this.clickEventListenerBind, true);
 		}		
 	}
 	clear(){
@@ -351,12 +362,19 @@ class Button{
 		if(isInside(getMousePos(canvas, e), this)){
 			
 			if(gameOver && this.restart){
-				document.removeEventListener('click', this.click);
-				restart();
+				if(canStart){
+					console.log("Before restart");
+					document.removeEventListener('click', this.clickEventListenerBind, true);
+					restart();
+				}
+				else{
+					alert("Please enter your name before starting game");
+				}
 			}
 			else if(this.start){
 				if(canStart){
-					document.removeEventListener('click', this.click);
+					console.log("Before start");
+					document.removeEventListener('click', this.clickEventListenerBind, true);
 					start();
 				}
 				else{
@@ -472,7 +490,7 @@ function draw(){
 		speed += 0.1;
 		landmarkScoreForSpeed += 1;
 	}
-	console.log("Speed is : " + speed);
+	// console.log("Speed is : " + speed);
 
 	//Generate the maxumimum no of bricks at a time.
 	if(noOfBricksAlive < maxBricks && noOfBricksAlive >= 0 && !gameOver){
