@@ -1,7 +1,8 @@
-var canvas, raf, ctx, clock, theta, bricks = [], gameOver = false, flags;
-var noOfBricksPassed, score, maxBricks, landmarkScoreForBricks, landmarkScoreForSpeed, speed;
+var canvas, raf, ctx, clock, theta, bricks = [], gameOver = false, flags, attatched, canAttatch, canSeperate, attatchedX, attatchedY, timeAttatched, affection;
+var centerRadius;
+var noOfBricksPassed, score, maxBricks, landmarkScoreForBricks, landmarkScoreForSpeed, landmarkScoreForAttatchment, landmarkBricks, savedLandmarkScore, savedLandmarkBricks, speed;
 var blue = 'rgba(100, 100, 255, 1)', pink = 'rgba(255, 100, 100, 1)', red = 'rgba(250, 50, 50, 0.9)', green = 'rgba(50, 250, 50, 0.9)';
-var gray = 'rgba(200, 200, 200, 0.9)', white = 'rgba(250, 250, 250, 0.9)', black = 'rgba(10, 10, 10, 0.8)';
+var gray = 'rgba(200, 200, 200, 0.9)', white = 'rgba(250, 250, 250, 0.9)', black = 'rgba(10, 10, 10, 0.8)', magenta = 'rgba(127, 0, 127, 0.9)';
 var scoreText;
 var noOfBricksAlive;
 var singlePlayer = true;
@@ -14,6 +15,7 @@ function load(){
 	canvas = document.getElementById("canvas");
 	ctx = canvas.getContext("2d");
 	scoreText = document.getElementById("score-text");
+	affectionMeter = document.getElementById("affection-meter");
 	singlePlayerDiv = document.getElementById("single-player-div");
 	multiPlayerDiv = document.getElementById("multi-player-div");
 	scoreboard = document.getElementById("scoreboard");	
@@ -60,7 +62,6 @@ function submit(){
 			name = document.getElementById("name").value;
 			if(name != "" && name != null){
 				canStart = true;
-				console.log("canStart : " + canStart);
 				Name = new Button(name);
 				Duet = new Button("Duet");
 				Name.draw(black, 3, 1);
@@ -74,7 +75,6 @@ function submit(){
 
 			if(playerAName != "" && playerBName != "" && playerAName != null && playerBName != null){
 				canStart = true;
-				console.log("canStart : " + canStart);
 				if(Name)
 					if(Name.drew)
 						Name.clear();
@@ -131,7 +131,17 @@ function init(){
 	started = true;
 
 	theta = 0;
+	centerRadius = 58;
+	attatched = false;
+	canAttatch = false;
+	canSeperate = false;
 	maxBricks = 1;
+	affection = 0;
+	attatchedY = 400;
+	attatchedX = 150;
+	timeAttatched = 0;
+	affectionMeter.setAttribute("value", 0);
+
 	noOfBricksAlive = 0;
 	noOfBricksPassed = 0;
 
@@ -142,6 +152,10 @@ function init(){
 	score = 0;
 	landmarkScoreForBricks = 4;
 	landmarkScoreForSpeed = 2;
+	landmarkScoreForAttatchment = 3;
+	landmarkBricks = 3;
+	savedLandmarkScore = 0;
+	savedLandmarkBricks = 0;
 	speed = 3;
 
 	clock = true;
@@ -199,7 +213,6 @@ class Ball{
 		this.y = 0;
 		this.radius = 10;
 		this.positive = positive;
-		// draw();
 	}
 	draw(centerX, centerY, centerRadius){
 		ctx.save();
@@ -211,17 +224,45 @@ class Ball{
 			this.x = centerX - centerRadius * Math.cos(theta);
 			this.y = centerY + centerRadius * Math.sin(theta);			
 		}
-		// ctx.translate(150, 400);				
-		// ctx.rotate(theta);
-		// if(this.pos)
-		// 	ctx.translate(50, 0);
-		// else
-		// 	ctx.translate(-50, 0);
 		ctx.beginPath();
 		ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2);
 		ctx.closePath();
 		ctx.fillStyle = this.color;
 		ctx.fill();
+		ctx.restore();
+	}
+	hide(text){
+		console.log("Inside hide for " + text);
+		ctx.clearRect(this.x - this.radius, this.y -  this.radius, 2 * this.radius, 2 * this.radius);
+		ctx.save();
+		ctx.fillStyle = gray;
+		ctx.fillRect(this.x - this.radius, this.y -  this.radius, 2 * this.radius, 2 * this.radius);
+		ctx.restore();
+	}
+}
+class AttachedBall extends Ball{
+	constructor(color, color1, color2){
+		super(color, true);
+		this.color1 = color1;
+		this.color2 = color2;
+	}
+	draw(x, y){
+		ctx.save();
+		this.x = x;
+		this.y = y;
+		ctx.beginPath();
+		ctx.arc(this.x, this.y, this.radius, Math.PI/2, 3*Math.PI/2, true);
+		ctx.closePath();
+		ctx.fillStyle = this.color1;
+		ctx.fill();
+		ctx.save();
+		ctx.restore();
+		ctx.beginPath();
+		ctx.arc(this.x, this.y, this.radius, Math.PI/2, 3*Math.PI/2, false);
+		ctx.closePath();
+		ctx.fillStyle = this.color2;
+		ctx.fill();
+		console.log("AttachedBall was drawn!");
 		ctx.restore();
 	}
 }
@@ -318,7 +359,6 @@ class Button{
 			case 'start' : this.start = true; break;
 			case 'restart' : this.restart = true; break;
 		}
-		console.log("Button " + this.text + " Entered with start = " + this.start + " and restart = " + this.restart);
 			
 	}
 	draw(color, noOfButtons = 1, number = 1){
@@ -363,7 +403,6 @@ class Button{
 			
 			if(gameOver && this.restart){
 				if(canStart){
-					console.log("Before restart");
 					document.removeEventListener('click', this.clickEventListenerBind, true);
 					restart();
 				}
@@ -373,7 +412,6 @@ class Button{
 			}
 			else if(this.start){
 				if(canStart){
-					console.log("Before start");
 					document.removeEventListener('click', this.clickEventListenerBind, true);
 					start();
 				}
@@ -400,45 +438,35 @@ function isInside(pos, rect){
     return (pos.x > rect.x && pos.x < rect.x+rect.width && pos.y < rect.y+rect.height && pos.y > rect.y);
 }
 
-// document.addEventListener('click', function(evt) {
-// 	var mousePos = getMousePos(canvas, evt);
-// 	if(gameOver)
-// 	if (isInside(mousePos, playAgain)) {
-		   
-// 	  restart();
-//    }
-// 	else{
-// 	  console.log('clicked outside rect');
-// 	}   
-// }, false);
-// var playAgain = {
-// 	text : 'Play Again',
-// 	x: 0,
-// 	y: 230,
-// 	width: 350,
-// 	height: 50,
-// 	draw: function(){
-// 		ctx.font = '400 40px Kremlin Pro Web';
-// 		this.width = ctx.measureText(this.text).width;
-// 		this.x = canvas.width/2 - this.width/2;
-// 		ctx.fillStyle = 'rgba(250, 250, 250, 0.6)';
-// 		ctx.fillRect(this.x, this.y, this.width, this.height);
-// 		ctx.fillStyle = 'rgba(50, 250, 50, 1)';			    	
-// 		ctx.fillText(this.text, this.x, this.y + this.height - 10);
-// 	}
-// }
-
 function arrowControl(e) {
 	var code = e.keyCode ? e.keyCode : e.which;
 	if (code === 37) { //left key
-		// console.log("Left key pressed");
-		theta += Math.PI/10;
-		clock = false;
+		console.log("Left key pressed");
+		if(!attatched){
+			theta += Math.PI/10;
+			clock = false;
+		}
+		else{
+			console.log("attatched = true in left key press");
+			if(attatchedX > 0){
+				attatchedX -= 10;
+				console.log("attatchedX : " + attatchedX);
+			}
+		}
 	}
 	else if (code === 39) {
-		// console.log("Right key pressed");
-		theta -= Math.PI/10; //right key
-		clock = true;
+		console.log("Right key pressed");
+		if(!attatched){
+			theta -= Math.PI/10; //right key
+			clock = true;
+		}
+		else{
+			console.log("attatched = true in right key press");
+			if(attatchedX < canvas.width){
+				attatchedX += 10;
+				console.log("attatchedX : " + attatchedX);
+			}
+		}
 	}
 };
 
@@ -450,8 +478,13 @@ function draw(){
 	rishav = new Ball(blue, true);
 	phoebe = new Ball(pink, false);
 
-	rishav.draw(150, 400, 58);
-	phoebe.draw(150, 400, 58);
+	if(!attatched){
+		rishav.draw(150, 400, centerRadius);
+		phoebe.draw(150, 400, centerRadius);
+	}
+	else{
+		Attatched.draw(attatchedX, attatchedY);
+	}
 
 	score += 1/100;
 	scoreText.innerHTML = "Score : " + Math.floor(score);
@@ -459,6 +492,9 @@ function draw(){
 		console.log("scoreHistory is : " + scoreHistory);
 		flags[1] = false;		
 	}
+
+	affection = (score - savedLandmarkScore) / landmarkScoreForAttatchment * 50 + (noOfBricksPassed - savedLandmarkBricks) / landmarkBricks * 50;
+	affectionMeter.setAttribute("value", affection);
 
 	scoreHistory[playerRank - 1][3] = Math.floor(score);
 
@@ -477,7 +513,6 @@ function draw(){
 		flags[0] = false;
 	}
 	
-
 	var deletedBrick;
 
 	if(score >= landmarkScoreForBricks){
@@ -490,7 +525,49 @@ function draw(){
 		speed += 0.1;
 		landmarkScoreForSpeed += 1;
 	}
-	// console.log("Speed is : " + speed);
+	// console.log("affection = " + affection);
+	if(affection >= 100){
+		console.log("affection = 100 reached");
+		Attatched = new AttachedBall(magenta, blue, pink);
+		canAttatch = true;
+		timeAttatched = 0;
+		savedLandmarkScore = landmarkScoreForAttatchment;
+		savedLandmarkBricks = landmarkBricks;
+		landmarkScoreForAttatchment += 10;
+		landmarkBricks += 10;
+	}
+	if(canAttatch){
+		if(centerRadius > 0 && !attatched){
+			--centerRadius;
+		}
+		else if(!attatched){
+		rishav.hide("rishav");
+		phoebe.hide("phoebe");
+		Attatched.draw(attatchedX, attatchedY);
+		attatched = true;
+		}
+		else if(timeAttatched < 200 && attatched){
+			++timeAttatched;
+			console.log("Time attatched : " + timeAttatched);
+		}
+		else if(attatched){
+			console.log("Time attatched >= 200");
+			attatched = false;
+			canSeperate = true;
+			canAttatch = false;
+			timeAttatched = 0;
+			Attatched.hide("Attatched");
+			console.log("Attatchment ended");
+		}
+	}
+	if(canSeperate){
+		if(centerRadius < 58){
+			++centerRadius;
+		}
+		else if(centerRadius == 58){
+			canSeperate = false;
+		}
+	}
 
 	//Generate the maxumimum no of bricks at a time.
 	if(noOfBricksAlive < maxBricks && noOfBricksAlive >= 0 && !gameOver){
@@ -538,13 +615,23 @@ function draw(){
 		raf = window.requestAnimationFrame(draw);
 	}
 	bricks.forEach(function(brick){
-		if(circleCollidesRectangle(rishav, brick) || circleCollidesRectangle(phoebe, brick)){
-			window.cancelAnimationFrame(raf);
-			gameOver = true;
-			console.log("Game is Over!");
-			ending();
+		if(!attatched){
+			if((circleCollidesRectangle(rishav, brick) || circleCollidesRectangle(phoebe, brick))){
+				window.cancelAnimationFrame(raf);
+				gameOver = true;
+				console.log("Game is Over!");
+				ending();
+			}
 		}
-	});
+		else{
+			if(circleCollidesRectangle(Attatched, brick)){
+				window.cancelAnimationFrame(raf);
+				gameOver = true;
+				console.log("Game is Over!");
+				ending();				
+			}
+		}
+		});
 	
 }
 function ending(){
@@ -558,7 +645,9 @@ function ending(){
 	started = false;
 	ended =  true;
 
-	console.log("scoreHistory is : " + scoreHistory);
+	console.log("noOfBricksPassed = " + noOfBricksPassed);
+
+	// console.log("scoreHistory is : " + scoreHistory);
 
 	if(singlePlayer){
 		GameOver = new Button('Game Over!');
@@ -590,26 +679,6 @@ function ending(){
 		Play.draw(green, 4, 3);
 		PlayerB.draw(black, 4, 4);
 	}
-
-	// else{
-	// 	window.cancelAnimationFrame(raf);
-	// 	// gameOver = false;
-	// 	ctx.fillStyle = 'rgba(200, 200, 200, 1)';
-	// 	// ctx.clearRect(0, 0, canvas.width, canvas.height);
-	// 	ctx.fillRect(0, 0, canvas.width, canvas.height);
-	// 	var text = 'Game Over!';
-	// 	ctx.font = '400 40px Kremlin Pro Web';
-	// 	var textWidth = ctx.measureText(text).width;
-	// 	var x = canvas.width/2 - textWidth/2;
-	// 	ctx.fillStyle = 'rgba(250, 250, 250, 0.6)';
-	// 	ctx.fillRect(x, 150, textWidth, 50);
-	// 	ctx.fillStyle = 'rgba(250, 50, 50, 1)';			    	
-	// 	ctx.fillText(text, x, 190);
-
-	// 	playAgain.draw();
-				
-	// 	ctx.restore();
-	// }
 				
 }
 			
