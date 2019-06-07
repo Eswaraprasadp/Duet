@@ -423,7 +423,7 @@ class Brick extends Obstacle{
 				this.x -= this.vx;
 			}
 		}
-		else if(moveRandomHorizontal && Math.abs(this.x - this.initialX) < 20){
+		else if(moveRandomHorizontal && Math.abs(this.x - this.initialX) < 50){
 			this.vx = max(this.vx, 2.5);
 			if(randomBoolean(50)){
 				this.x += this.vx;
@@ -684,6 +684,7 @@ function draw(){
 			moveRandomHorizontal = false;
 		}
 		else if(!moveRandomHorizontal){
+			speedX = max(speedX + 0.5, 4);
 			moveHorizontal = false;
 			moveRandomHorizontal = true;
 			console.log("Starting random motion");
