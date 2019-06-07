@@ -1,6 +1,6 @@
 var canvas, raf, ctx, clock, theta, bricks = [], gameOver = false, flags, attatched, canAttatch, canSeperate, attatchedX, attatchedY, timeAttatched, affection;
-var centerRadius;
-var noOfBricksPassed, score, maxBricks, landmarkScoreForBricks, landmarkScoreForSpeed, landmarkScoreForAttatchment, landmarkBricks, savedLandmarkScore, savedLandmarkBricks, speed;
+var centerRadius, poweredup, timePoweredup, timeFlighted, thetaRate, moveHorizontal, moveRandomHorizontal, landmarksForHorizontalMovement;
+var noOfBricksPassed, score, maxBricks, landmarkScoreForBricks, landmarkScoreForSpeed, landmarkScoreForAttatchment, landmarkBricks, savedLandmarkScore, savedLandmarkBricks, speedY, speedX;
 var blue = 'rgba(100, 100, 255, 1)', pink = 'rgba(255, 100, 100, 1)', red = 'rgba(250, 50, 50, 0.9)', green = 'rgba(50, 250, 50, 0.9)';
 var gray = 'rgba(200, 200, 200, 0.9)', white = 'rgba(250, 250, 250, 0.9)', black = 'rgba(10, 10, 10, 0.8)', magenta = 'rgba(127, 0, 127, 0.9)';
 var scoreText;
@@ -10,6 +10,7 @@ var name, playerAName, playerBName, canStart = false;
 var playerNumber = 2, playerRank = 2, scoreHistory = [[1, 1, 'noobmaster69', Infinity]];
 var pauseButton, resumeButton, paused = false, started = false, ended = false, turnA;
 var Start, Restart, PlayAgain, Play, GameOver, Name, PlayerA, PlayerB, Duet;
+var Horlicks, Flight, horlicksGenerated, flightsGenerated, noOfHorlicksGenerated, noOfFlightsGenerated,  canGenerateHorlicks, canGenerateFlight;
 
 function load(){
 	canvas = document.getElementById("canvas");
@@ -30,7 +31,6 @@ function load(){
 
 	Start = new Button('Start!', 'start');
 	Start.draw(green);
-	// raf = window.requestAnimationFrame(draw);
 	
 }
 function submit(){
@@ -113,7 +113,6 @@ function pause(){
 	if(started){
 		window.cancelAnimationFrame(raf);
 		paused = true;
-		pauseButton.disabled = true;
 		resumeButton.disabled = false;
 		console.log("Paused");
 	}
@@ -127,19 +126,37 @@ function resume(){
 		raf = window.requestAnimationFrame(draw);
 	}
 }
+function buttonRestart(){
+	if(started){
+		window.cancelAnimationFrame(raf);
+		ended = true;
+		restart();
+	}
+}
 function init(){
 	started = true;
 
+	rishav = new Ball(blue, true);
+	phoebe = new Ball(pink, false);
+
 	theta = 0;
+	thetaRate = Math.PI/10;
 	centerRadius = 58;
+	poweredup = false;
 	attatched = false;
 	canAttatch = false;
 	canSeperate = false;
+	canGenerateHorlicks = true;
+	canGenerateFlight = true;
+	moveHorizontal = false;
+	moveRandomHorizontal = false;
 	maxBricks = 1;
 	affection = 0;
 	attatchedY = 400;
 	attatchedX = 150;
 	timeAttatched = 0;
+	timePoweredup = 0;
+	timeFlighted = 0;
 	affectionMeter.setAttribute("value", 0);
 
 	noOfBricksAlive = 0;
@@ -148,18 +165,26 @@ function init(){
 	bricks = [];
 	noOfBricksAlive = 0;
 
+	horlicksGenerated = [];
+	flightsGenerated = [];
+
+	noOfHorlicksGenerated = 0;
+	noOfFlightsGenerated = 0;
+
 	gameOver = false;
 	score = 0;
-	landmarkScoreForBricks = 4;
+	landmarkScoreForBricks = 3;
 	landmarkScoreForSpeed = 2;
-	landmarkScoreForAttatchment = 3;
-	landmarkBricks = 3;
+	landmarkScoreForAttatchment = 5;
+	landmarkBricks = 9;
 	savedLandmarkScore = 0;
 	savedLandmarkBricks = 0;
-	speed = 3;
+	landmarksForHorizontalMovement = [3, 3];
+	speedY = 3;
+	speedX = 1;
 
 	clock = true;
-	flags = [true, true];
+	flags = [true, true, true];
 
 	var newRow = document.createElement("tr");
 
@@ -229,10 +254,42 @@ class Ball{
 		ctx.closePath();
 		ctx.fillStyle = this.color;
 		ctx.fill();
+		ctx.lineWidth = 0.2;
+		ctx.strokeStyle = magenta;
+		ctx.stroke();		
+
+		if(poweredup && this.positive){
+			ctx.save();
+			this.radius = 15;
+			//Spikes
+			for (let angle = 0; angle < Math.PI * 2; angle += Math.PI/4){			
+				let rx = Math.cos(angle);
+				let ry = -1 * Math.sin(angle);
+				let tx = Math.sin(angle);
+				let ty = Math.cos(angle);
+				ctx.save();
+				ctx.beginPath();
+				ctx.moveTo(this.x + this.radius*rx, this.y + this.radius*ry);
+				ctx.lineTo(this.x + this.radius*rx + this.radius/5*tx, this.y + this.radius*ry + this.radius/5*ty);
+				ctx.lineTo(this.x + this.radius*1.3*rx, this.y + this.radius*1.3*ry);
+				ctx.closePath();
+				ctx.fillStyle = blue;
+				ctx.fill();
+				ctx.lineWidth = 0.3;				
+				ctx.strokeStyle = magenta;
+				ctx.stroke();
+				ctx.restore();			
+			}
+			ctx.restore();
+		}
+		else if(!poweredup){
+			this.radius = 10;
+		}
+
 		ctx.restore();
 	}
 	hide(text){
-		console.log("Inside hide for " + text);
+		// console.log("Inside hide for " + text);
 		ctx.clearRect(this.x - this.radius, this.y -  this.radius, 2 * this.radius, 2 * this.radius);
 		ctx.save();
 		ctx.fillStyle = gray;
@@ -251,18 +308,10 @@ class AttachedBall extends Ball{
 		this.x = x;
 		this.y = y;
 		ctx.beginPath();
-		ctx.arc(this.x, this.y, this.radius, Math.PI/2, 3*Math.PI/2, true);
+		ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2, true);
 		ctx.closePath();
-		ctx.fillStyle = this.color1;
+		ctx.fillStyle = this.color;
 		ctx.fill();
-		ctx.save();
-		ctx.restore();
-		ctx.beginPath();
-		ctx.arc(this.x, this.y, this.radius, Math.PI/2, 3*Math.PI/2, false);
-		ctx.closePath();
-		ctx.fillStyle = this.color2;
-		ctx.fill();
-		console.log("AttachedBall was drawn!");
 		ctx.restore();
 	}
 }
@@ -270,7 +319,6 @@ class Obstacle{
 	constructor(shape, color){
 		this.shape = shape;
 		this.color = color;
-
 	}
 }
 class Brick extends Obstacle{
@@ -279,7 +327,10 @@ class Brick extends Obstacle{
 		var rand2 = Math.random();
 		var rand3 = Math.random();
 		var color;
-		if((rand1*255 <= 20 && rand2*255 <= 20 && rand3*255 <= 20) || (Math.abs(rand1 - rand2)*255 <= 5 && Math.abs(rand2 - rand3)*255 <= 5 && Math.abs(rand3 - rand1)*255 <= 5)){
+		if((rand1*255 >= 200 && rand2*255 >= 200 && rand3*255 >= 200) || (Math.abs(rand1 - rand2)*255 <= 5 && Math.abs(rand2 - rand3)*255 <= 5 && Math.abs(rand3 - rand1)*255 <= 5)){
+			rand1 = 250;
+			rand2 = 50;
+			rand3 = 50;
 			color = 'rgb(250, 50, 50)';
 		}
 		else{
@@ -299,48 +350,149 @@ class Brick extends Obstacle{
 		}
 		
 		this.x = Math.random()*200 + 50 - this.width/2;
+		this.initialX = this.x;
+		this.positive = randomBoolean(50);
 		
 		this.y = 5;
+		this.vx = 1;
 		this.vy = 3;
 		this.alive = true;
 
+		if(rand1 >= rand2 && rand1 >= rand3){
+			this.borderR = (rand1 <= 215) ? rand1 + 40 : rand1;
+			this.borderG = (rand1 >= 40) ? rand1 - 40 : rand1;
+			this.borderB = (rand1 >= 40) ? rand1 - 40 : rand1;
+		}
+		else if(rand1 >= rand2 && rand1 >= rand3){
+			this.borderR = (rand1 >= 40) ? rand1 - 40 : rand1;
+			this.borderG = (rand1 <= 215) ? rand1 + 40 : rand1;
+			this.borderB = (rand1 >= 40) ? rand1 - 40 : rand1;
+		}
+		else{
+			this.borderR = (rand1 >= 40) ? rand1 - 40 : rand1;
+			this.borderG = (rand1 >= 40) ? rand1 - 40 : rand1;
+			this.borderB = (rand1 <= 215) ? rand1 + 40 : rand1;
+		}
 	}
 	
 	draw(){
+		if(this.alive){
+			ctx.save();
+			ctx.fillStyle = this.color;
+			ctx.fillRect(this.x, this.y, this.width, this.height);
+			ctx.strokeStyle = 'rgb(' + (Math.floor(this.borderR*255)) + ',' + (Math.floor(this.borderG*255)) + ',' + (Math.floor(this.borderB*255)) + ')';
+			ctx.lineWidth = 0.8;
+			ctx.strokeRect(this.x, this.y, this.width, this.height);
+			ctx.restore();	
+		}	
+	}	
+	hide(){
+		this.alive = false;
+		ctx.clearRect(this.x, this.y, this.width, this.height);
 		ctx.save();
-		ctx.fillStyle = this.color;
+		ctx.fillStyle = gray;
 		ctx.fillRect(this.x, this.y, this.width, this.height);
-		ctx.restore();
-		
+		ctx.restore();		
 	}
-	// setAlive(alive){
-	// 	this.alive = alive;
-	// }
-	// isAlive(){
-	// 	return this.alive;
-	// }
+
 	isAlive(){
 		
 		if(this.y + this.vy + this.height/2 >= canvas.height){
-			// console.log("Brick not alive in isAlive");
-			// ++noOfBricksPassed;
-			// canAttack = true;
+			this.alive = false;
+			return false;
+		}
+		else if(!this.alive){
+			console.log("Inside brick, isAlive is false because of hide()");
 			return false;
 		}
 		else{
 			return true;
 		}
 	}
-	updateSpeed(dv){
+	updateSpeed(dx, dv){
+		this.vx += dx;
 		this.vy += dv;
 	}
 	update(){
 		this.y += this.vy;
+		if(moveHorizontal && Math.abs(this.x - this.initialX) < 20 && this.y >= Math.random()*canvas.height){
+			if(this.positive){
+				this.x += this.vx;
+			}
+			else{
+				this.x -= this.vx;
+			}
+		}
+		else if(moveRandomHorizontal && Math.abs(this.x - this.initialX) < 20){
+			this.vx = max(this.vx, 2.5);
+			if(randomBoolean(50)){
+				this.x += this.vx;
+			}
+			else{
+				this.x -= this.vx;
+			}
+		}		
+	}
+	updateToSpeed(vx, vy){
+		this.vx = vx;
+		this.vy = vy;
+	}
+
+}
+class Powerup{
+	constructor(name){
+		this.powerup = new Image();
+		this.name = name;
+		this.loaded = false;
+		this.width = 50;
+		this.height = 100;
+
+		switch(name){
+			case 'horlicks' : this.powerup.src = "res/horlicks.png"; this.width = 50; this.height = 100;break;
+			case 'flight' : this.powerup.src = "res/flight.png"; this.width = 64; this.height = 64;break;
+		}
+		this.x = Math.random()*200 + 50 - this.width/2;	
+		this.y = 5;
+		this.vy = 3;
+		this.alive = true;
+		this.picked = false;
+
+	}
+	draw(){
+
+		if(this.loaded && this.alive && !this.picked){
+				ctx.save();
+				ctx.drawImage(this.powerup, this.x, this.y);
+				ctx.restore();	
+		}
+	}
+	hide(){
+		this.picked = true;
+		ctx.clearRect(this.x, this.y, this.width, this.height);
+		ctx.save();
+		ctx.fillStyle = gray;
+		ctx.fillRect(this.x, this.y, this.width, this.height);
+		ctx.restore();		
+	}
+	update(){
+		this.y += this.vy;
+	}
+	isAlive(){
+		
+		if(this.y + this.vy + this.height/2 >= canvas.height){
+			this.alive = false;
+			return false;
+		}
+		else{
+			return true;
+		}
+	}
+	isPicked(){
+		return this.picked;
 	}
 	updateToSpeed(vy){
 		this.vy = vy;
 	}
-
 }
 class Button{
 	constructor(text, action = 'none'){
@@ -363,8 +515,6 @@ class Button{
 	}
 	draw(color, noOfButtons = 1, number = 1){
 	
-		// ctx.clearRect(this.x, this.y, this.width, this.height);
-		// ctx.clearRect(0, this.y, canvas.width, this.height);
 		ctx.fillStyle = gray;
 		ctx.fillRect(0, this.y, canvas.width, this.height);
 		if(noOfButtons == 1)
@@ -433,50 +583,47 @@ function getMousePos(canvas, event) {
 	
 //Function to check whether a point is inside a rectangle
 function isInside(pos, rect){
-	
-	// console.log((pos.x > x && pos.x < x+width && pos.y < y+height && pos.y > y) + " Returned in isInside");
     return (pos.x > rect.x && pos.x < rect.x+rect.width && pos.y < rect.y+rect.height && pos.y > rect.y);
 }
 
 function arrowControl(e) {
 	var code = e.keyCode ? e.keyCode : e.which;
 	if (code === 37) { //left key
-		console.log("Left key pressed");
 		if(!attatched){
-			theta += Math.PI/10;
+			theta += thetaRate;
 			clock = false;
 		}
 		else{
-			console.log("attatched = true in left key press");
+			// console.log("attatched = true in left key press");
 			if(attatchedX > 0){
 				attatchedX -= 10;
-				console.log("attatchedX : " + attatchedX);
+				// console.log("attatchedX : " + attatchedX);
 			}
 		}
 	}
 	else if (code === 39) {
-		console.log("Right key pressed");
 		if(!attatched){
-			theta -= Math.PI/10; //right key
+			theta -= thetaRate; //right key
 			clock = true;
 		}
 		else{
-			console.log("attatched = true in right key press");
+			// console.log("attatched = true in right key press");
 			if(attatchedX < canvas.width){
 				attatchedX += 10;
-				console.log("attatchedX : " + attatchedX);
+				// console.log("attatchedX : " + attatchedX);
 			}
 		}
 	}
 };
+function randomBoolean(probability){
+	let n = probability/100;
+	let rand = Math.random();
+	return (rand < n) ? true : false;
+}
 
 function draw(){
 
-	
 	drawBackground();
-
-	rishav = new Ball(blue, true);
-	phoebe = new Ball(pink, false);
 
 	if(!attatched){
 		rishav.draw(150, 400, centerRadius);
@@ -488,10 +635,65 @@ function draw(){
 
 	score += 1/100;
 	scoreText.innerHTML = "Score : " + Math.floor(score);
+
+	if(score >= 3 && noOfHorlicksGenerated == 0 && canGenerateHorlicks && randomBoolean(8)){
+		Horlicks = new Powerup('horlicks');
+		horlicksGenerated.push(Horlicks);
+		++noOfHorlicksGenerated;
+		console.log("New Horlicks generated");
+		canGenerateHorlicks = false;
+	}
+	else if(poweredup && timePoweredup < 300){
+		++timePoweredup;
+	}
+	else if(poweredup && timePoweredup >= 300){
+		poweredup = false;
+		console.log("timePoweredup is " + timePoweredup + ", so poweredup is : " + poweredup);
+		console.log("Horlicks picked and ended");
+		timePoweredup = 0;
+		canGenerateHorlicks = true;		
+	}
+
+	if(score >= 3 && noOfFlightsGenerated == 0 && canGenerateFlight && randomBoolean(8)){
+		Flight = new Powerup('flight');
+		flightsGenerated.push(Flight);
+		++noOfFlightsGenerated;
+		console.log("New Flight generated");
+		canGenerateFlight = false;
+	}
+	else if(thetaRate > Math.PI/10 && timeFlighted < 300){
+		++timeFlighted;
+	}
+	else if(thetaRate > Math.PI/10 && timeFlighted >= 300){
+		thetaRate /= 1.5;
+		console.log("timeFlighted is " + timeFlighted + ", so relative thetaRate is : " + (thetaRate/(Math.PI/10)).toFixed(1));
+		console.log("Flight picked and ended");
+		canGenerateFlight = true;
+		// canGenerateFlight = true;
+	}
+
 	if(flags[1]){
 		console.log("scoreHistory is : " + scoreHistory);
 		flags[1] = false;		
 	}
+	if(score >= landmarksForHorizontalMovement[0] && noOfBricksPassed >= landmarksForHorizontalMovement[1]){
+		if(!moveHorizontal){
+			console.log("Starting regular horizontal motion");
+			console.log("SpeedX is : " + speedX.toFixed(2));
+			moveHorizontal = true;
+			moveRandomHorizontal = false;
+		}
+		else if(!moveRandomHorizontal){
+			moveHorizontal = false;
+			moveRandomHorizontal = true;
+			console.log("Starting random motion");
+			console.log("SpeedX is : " + speedX.toFixed(2));
+		}
+		landmarksForHorizontalMovement[0] += 3;
+		landmarksForHorizontalMovement[1] += 4;
+		speedX += 0.25;
+	}
+	
 
 	affection = (score - savedLandmarkScore) / landmarkScoreForAttatchment * 50 + (noOfBricksPassed - savedLandmarkBricks) / landmarkBricks * 50;
 	affectionMeter.setAttribute("value", affection);
@@ -513,27 +715,28 @@ function draw(){
 		flags[0] = false;
 	}
 	
-	var deletedBrick;
+	var deletedBrick, deletedHorlicks, deletedFlight;
 
 	if(score >= landmarkScoreForBricks){
-		landmarkScoreForBricks += 5;
+		landmarkScoreForBricks += 4;
 		++maxBricks;
 	}
 	if(score >= landmarkScoreForSpeed){
 		// console.log("landmarkScoreForSpeed : " + landmarkScoreForSpeed + " Reached");
 		// flags[1] = false;
-		speed += 0.1;
+		speedY += 0.1;
 		landmarkScoreForSpeed += 1;
 	}
 	// console.log("affection = " + affection);
 	if(affection >= 100){
 		console.log("affection = 100 reached");
+		console.log("Attatchment about to start");
 		Attatched = new AttachedBall(magenta, blue, pink);
 		canAttatch = true;
 		timeAttatched = 0;
 		savedLandmarkScore = landmarkScoreForAttatchment;
 		savedLandmarkBricks = landmarkBricks;
-		landmarkScoreForAttatchment += 10;
+		landmarkScoreForAttatchment += 6;
 		landmarkBricks += 10;
 	}
 	if(canAttatch){
@@ -545,19 +748,20 @@ function draw(){
 		phoebe.hide("phoebe");
 		Attatched.draw(attatchedX, attatchedY);
 		attatched = true;
+		console.log("Attatchment started");
 		}
-		else if(timeAttatched < 200 && attatched){
+		else if(timeAttatched < 300 && attatched){
 			++timeAttatched;
-			console.log("Time attatched : " + timeAttatched);
+			// console.log("Time attatched : " + timeAttatched);
 		}
 		else if(attatched){
-			console.log("Time attatched >= 200");
+			console.log("Time attatched >= 300");
 			attatched = false;
 			canSeperate = true;
 			canAttatch = false;
 			timeAttatched = 0;
 			Attatched.hide("Attatched");
-			console.log("Attatchment ended");
+			console.log("Attatchment ended. Balls started seperating");
 		}
 	}
 	if(canSeperate){
@@ -566,56 +770,86 @@ function draw(){
 		}
 		else if(centerRadius == 58){
 			canSeperate = false;
+			console.log("Balls fully seperated")
 		}
 	}
 
 	//Generate the maxumimum no of bricks at a time.
-	if(noOfBricksAlive < maxBricks && noOfBricksAlive >= 0 && !gameOver){
-		// console.log("noOfBricksAlive : " + noOfBricksAlive);
-		// if(noOfBricksAlive > 0){
-		// 	console.log("bricks[noOfBricksAlive-1].y : " + bricks[noOfBricksAlive-1].y);
-		// 	console.log("bricks[noOfBricksAlive-1].y >= canvas.height/2 : " + bricks[noOfBricksAlive-1].y >= canvas.height/2);
-		// }
+	if(noOfBricksAlive < maxBricks && noOfBricksAlive >= 0 && !gameOver && !canSeperate && timeAttatched < 200 && affection < 88){
+
 		if(noOfBricksAlive > 0 && bricks[noOfBricksAlive-1].y >= canvas.height/2){
-			// console.log("bricks[noOfBricksAlive-1].y before Generate: " + bricks[noOfBricksAlive-1].y);
 			
 			bricks.push(new Brick());
 
 			++noOfBricksAlive;
-			bricks[noOfBricksAlive - 1].updateToSpeed(speed);
-			console.log("Speed updated to : " + bricks[noOfBricksAlive - 1].vy.toFixed(2) + " for brick : " + noOfBricksAlive);
+			bricks[noOfBricksAlive - 1].updateToSpeed(speedX, speedY);
+			// console.log("Speed updated to : " + bricks[noOfBricksAlive - 1].vy.toFixed(2) + " for brick : " + noOfBricksAlive);
 		}
 		else if(noOfBricksAlive == 0){
 			bricks.push(new Brick());
 			++noOfBricksAlive;
-			bricks[noOfBricksAlive - 1].updateToSpeed(speed);
-			console.log("Speed updated to : " + bricks[noOfBricksAlive - 1].vy.toFixed(2) + " for brick : " + noOfBricksAlive);
+			bricks[noOfBricksAlive - 1].updateToSpeed(speedX, speedY);
+			// console.log("Speed updated to : " + bricks[noOfBricksAlive - 1].vy.toFixed(2) + " for brick : " + noOfBricksAlive);
 			// console.log("Since noOfBricksAlive is 0, noOfBricksAlive was incremented to " + noOfBricksAlive);
 		}			
 		
 	}
-	// console.log("bricks[0].isAlive() : " + bricks[0].isAlive());
-	if(!bricks[0].isAlive()){
-		deletedBrick = bricks.splice(0, 1);
-		--noOfBricksAlive;
-		++noOfBricksPassed;
-		flags[0] = true;
-		// console.log("One brick deleted");
+	if(noOfBricksAlive > 0){
+		if(!bricks[0].isAlive()){
+			deletedBrick = bricks.splice(0, 1);
+			--noOfBricksAlive;
+			++noOfBricksPassed;
+			flags[0] = true;
+		}
+	}
+	if(noOfHorlicksGenerated > 0){
+		if(!horlicksGenerated[0].isAlive()){
+			deletedHorlicks = horlicksGenerated.splice(0, 1);
+			--noOfHorlicksGenerated;
+			canGenerateHorlicks = true;
+		}
+		else if(horlicksGenerated[0].isPicked()){
+			deletedHorlicks = horlicksGenerated.splice(0, 1);
+			--noOfHorlicksGenerated;
+		}
+	}
+
+	if(noOfFlightsGenerated > 0){
+		if(!flightsGenerated[0].isAlive()){
+			deletedFlight = flightsGenerated.splice(0, 1);
+			--noOfFlightsGenerated;
+			canGenerateFlight = true;
+		}
+		else if(flightsGenerated[0].isPicked()){
+			deletedFlight = flightsGenerated.splice(0, 1);
+			--noOfFlightsGenerated;
+		}
 	}
 	
 	if(!gameOver){
-		// if(flag)
-		// 	console.log("Inside !gameOver");
 		bricks.forEach(function(brick, index){
 			brick.update();
-			brick.draw();
-		// if(flag)	
-			// console.log("requestAnimationFrame requested");	
+			brick.draw();	
 		});
+		horlicksGenerated.forEach(function(horlicks){
+			horlicks.powerup.onload = function(){
+				horlicks.loaded = true;
+			}
+			horlicks.update();
+			horlicks.draw();
+		});
+		flightsGenerated.forEach(function(flight){
+			flight.powerup.onload = function(){
+				flight.loaded = true;
+			}
+			flight.update();
+			flight.draw();
+		})
 		raf = window.requestAnimationFrame(draw);
 	}
-	bricks.forEach(function(brick){
-		if(!attatched){
+	bricks.forEach(function(brick, index){
+		// console.log("poweredup : " + poweredup);
+		if(!attatched && !poweredup){
 			if((circleCollidesRectangle(rishav, brick) || circleCollidesRectangle(phoebe, brick))){
 				window.cancelAnimationFrame(raf);
 				gameOver = true;
@@ -623,7 +857,23 @@ function draw(){
 				ending();
 			}
 		}
-		else{
+		else if(!attatched && poweredup){
+			if(circleCollidesRectangle(rishav, brick)){
+				console.log("Brick collided with powered rishav");
+				brick.hide();
+				deletedBrick = bricks.splice(index, 1);
+				--noOfBricksAlive;
+				++noOfBricksPassed;
+			}
+			else if(circleCollidesRectangle(phoebe, brick)){
+				console.log("Phoebe collided with brick when rishav was powered");
+				window.cancelAnimationFrame(raf);
+				gameOver = true;
+				console.log("Game is Over!");
+				ending();
+			}
+		}
+		else if(attatched){
 			if(circleCollidesRectangle(Attatched, brick)){
 				window.cancelAnimationFrame(raf);
 				gameOver = true;
@@ -631,7 +881,23 @@ function draw(){
 				ending();				
 			}
 		}
-		});
+
+	});
+	horlicksGenerated.forEach(function(horlicks, index){
+		// console.log("Inside main animation horlicks.loaded is : " + horlicks.loaded);
+		if(circleCollidesRectangle(rishav, horlicks) && horlicks.loaded && !attatched){
+			poweredup = true;
+			console.log("Rishav picked up horlicks. poweredup : " + poweredup);
+			horlicks.hide();
+		}
+	});
+	flightsGenerated.forEach(function(flight, index){
+		if((circleCollidesRectangle(rishav, flight) || circleCollidesRectangle(phoebe, flight))&& flight.loaded && !attatched){
+			thetaRate *= 1.5;
+			console.log("One of the balls picked up flight. Relative thetaRate : " + (thetaRate/(Math.PI/10)).toFixed(2));
+			flight.hide();
+		}	
+	});
 	
 }
 function ending(){
@@ -744,6 +1010,9 @@ function swapTableTexts(i, j){
 	arr.forEach(function(value){
 		[scoreboard.rows[i].cells[value].innerHTML, scoreboard.rows[j].cells[value].innerHTML] = [scoreboard.rows[j].cells[value].innerHTML, scoreboard.rows[i].cells[value].innerHTML]	
 	});
+}
+function max(a, b){
+	return ((a > b) ? a : b);
 }
 
 
