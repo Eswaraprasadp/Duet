@@ -1,19 +1,16 @@
 body{
 	text-align: center;
-	/*background-image: linear-gradient(to top, rgba(200, 200, 200, 0.3), rgba(50, 50, 50, 0.3) );*/
-	/*background-position: center;*/
 	background-color: rgba(0, 0, 0, 0.95);
-	/*background-image: url("E:/Images/game_background.png");*/
-	/*background-size: cover;*/
 	width: 99%;
 	height: 99%;
-	/*background-image: linear-gradient(to bottom, rgba(125, 252, 250, 0.5), rgba(115, 222, 230, 0.4));*/
+	background:
+		linear-gradient(to bottom, rgba(0, 0, 0, 1), transparent),
+		linear-gradient(to top right, rgba(10, 10, 40, 1), transparent),
+		linear-gradient(to top left, rgba(45, 10, 40, 1), transparent),
+		linear-gradient(to top, rgba(0, 0, 0, 1), transparent);
+	background-blend-mode: screen;
+	background-repeat: no-repeat;	
 }
-/*canvas{
-	border: 1px solid black;
-	margin-right: 10vw;
-	margin-top: 5vh;
-}*/
 .container{
 	display: flex;
 	flex-direction: row;
@@ -24,10 +21,6 @@ body{
 .col-1{
 	display: flex;
 	flex-direction: column;
-	/*flex: 1 1 auto*/
-	/*flex-wrap: nowrap;*/
-	/*flex: 1 1 auto;*/
-	/*flex-grow: 1;*/
 	width: 55%;
 	text-align: center;
 	height: 99%;
@@ -39,7 +32,7 @@ body{
 	width: 44%;
 	/*height: 100%;*/
 	text-align: center;
-	padding-top: 10px;
+	padding-top: 8%;
 	padding-bottom: 10px;
 }
 .canvas-card{
@@ -75,34 +68,44 @@ body{
 	/*height: 15%;*/
 	/*display: flex;
 	flex-direction: column;*/
-	margin-top: 10px;
-	margin-bottom: 10px;
+	margin-top: 40px;
+	margin-bottom: 40px;
 }
 .submit-div{
 	/*height: 10%;*/
-	margin-top: 15px;
-	margin-bottom: 5px;
+	margin-top: 25px;
+	margin-bottom: 15px;
 }
 span{
 	font-size: 20px;
-	color: white;
+	color: rgba(250, 250, 250, 0.7);
 	font-family: "Kremlin Pro Web", "Roboto Slab", verdana, "georgia";
 	text-shadow: 1.1px 1.1px 0.5px #aaa;
 	font-weight: normal;
 }
 .customButton{
-	background-color: black;
+	/*background-color: rgba(170, 130, 170, 0.8);*/
+	background-color: rgba(0, 0, 0, 0.5);
 }
 .customControl{
 	width: 30px;
 	height: 30px;
 	margin: auto 20px;
 }
-td, th{
+td{
 	font-size: 20px;
 	color: white;
 	font-family: "Kremlin Pro Web", "Roboto Slab", verdana, "georgia";
 	text-shadow: 1.1px 1.1px 0.5px #aaa;
+	font-weight: normal;
+	border: 1px solid gray;
+	padding: 6px 5px;
+}
+th{
+	font-size: 20px;
+	color: rgba(250, 250, 250, 0.7);
+	font-family: "Kremlin Pro Web", "Roboto Slab", verdana, "georgia";
+	text-shadow: 0.5px 0.5px 0.2px white;
 	font-weight: normal;
 	border: 1px solid gray;
 	padding: 6px 5px;
@@ -116,4 +119,46 @@ td, th{
 	font-weight: normal;	
 	background-color: rgba(240, 240, 240, 0.94);
 	margin: 1% auto;
+}
+@media screen and (min-width: 50px) and  (max-width: 875px){
+	.container{
+		display: flex;
+		flex-direction: column;
+		/*flex: 1 1 auto;*/
+		width: 99%;
+		height: 99%;
+	}	
+	.col-1{
+		display: flex;
+		flex-direction: column;
+		flex: 1 1 auto;
+		text-align: center;
+		padding-top: 5px;
+		padding-bottom: 10px;
+		width: 100%;
+		/*height: 700px;*/
+	}
+	.col-2{
+		display: flex;
+		flex-direction: column;
+		flex: 1 1 auto;
+		/*height: 100%;*/
+		text-align: center;
+		padding-top: 10px;
+		padding-bottom: 10px;
+	}
+	.canvas-card{
+		/*height: 60%;*/
+		margin-bottom: 5px;
+		width: 100%;
+	}
+	.scoreboard{
+		padding-left: 10%;
+		padding-right: 10%;
+		width: 100%;
+	}
+/*	.scoreboard-div{
+		display: flex;
+		flex: 1 1 auto;
+	}*/
 }

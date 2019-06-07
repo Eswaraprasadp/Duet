@@ -2,7 +2,7 @@ var canvas, raf, ctx, clock, theta, bricks = [], gameOver = false, flags, attatc
 var centerRadius, poweredup, timePoweredup, timeFlighted, thetaRate, moveHorizontal, moveRandomHorizontal, landmarksForHorizontalMovement;
 var noOfBricksPassed, score, maxBricks, landmarkScoreForBricks, landmarkScoreForSpeed, landmarkScoreForAttatchment, landmarkBricks, savedLandmarkScore, savedLandmarkBricks, speedY, speedX;
 var blue = 'rgba(100, 100, 255, 1)', pink = 'rgba(255, 100, 100, 1)', red = 'rgba(250, 50, 50, 0.9)', green = 'rgba(50, 250, 50, 0.9)';
-var gray = 'rgba(200, 200, 200, 0.9)', white = 'rgba(250, 250, 250, 0.9)', black = 'rgba(10, 10, 10, 0.8)', magenta = 'rgba(127, 0, 127, 0.9)';
+var gray = 'rgba(190, 190, 190, 0.8)', grayTransparent = 'rgba(190, 190, 190, 0.4)', white = 'rgba(250, 250, 250, 0.9)', black = 'rgba(10, 10, 10, 0.8)', magenta = 'rgba(127, 0, 127, 0.9)';
 var scoreText;
 var noOfBricksAlive;
 var singlePlayer = true;
@@ -173,7 +173,7 @@ function init(){
 
 	gameOver = false;
 	score = 0;
-	landmarkScoreForBricks = 3;
+	landmarkScoreForBricks = 2;
 	landmarkScoreForSpeed = 2;
 	landmarkScoreForAttatchment = 5;
 	landmarkBricks = 9;
@@ -636,17 +636,17 @@ function draw(){
 	score += 1/100;
 	scoreText.innerHTML = "Score : " + Math.floor(score);
 
-	if(score >= 3 && noOfHorlicksGenerated == 0 && canGenerateHorlicks && randomBoolean(8)){
+	if(score >= 3 && noOfHorlicksGenerated == 0 && canGenerateHorlicks && randomBoolean(5)){
 		Horlicks = new Powerup('horlicks');
 		horlicksGenerated.push(Horlicks);
 		++noOfHorlicksGenerated;
 		console.log("New Horlicks generated");
 		canGenerateHorlicks = false;
 	}
-	else if(poweredup && timePoweredup < 300){
+	else if(poweredup && timePoweredup < 200){
 		++timePoweredup;
 	}
-	else if(poweredup && timePoweredup >= 300){
+	else if(poweredup && timePoweredup >= 200){
 		poweredup = false;
 		console.log("timePoweredup is " + timePoweredup + ", so poweredup is : " + poweredup);
 		console.log("Horlicks picked and ended");
@@ -654,7 +654,7 @@ function draw(){
 		canGenerateHorlicks = true;		
 	}
 
-	if(score >= 3 && noOfFlightsGenerated == 0 && canGenerateFlight && randomBoolean(8)){
+	if(score >= 3 && noOfFlightsGenerated == 0 && canGenerateFlight && randomBoolean(7)){
 		Flight = new Powerup('flight');
 		flightsGenerated.push(Flight);
 		++noOfFlightsGenerated;
@@ -691,7 +691,7 @@ function draw(){
 		}
 		landmarksForHorizontalMovement[0] += 3;
 		landmarksForHorizontalMovement[1] += 4;
-		speedX += 0.25;
+		speedX += 0.3;
 	}
 	
 
@@ -718,13 +718,13 @@ function draw(){
 	var deletedBrick, deletedHorlicks, deletedFlight;
 
 	if(score >= landmarkScoreForBricks){
-		landmarkScoreForBricks += 4;
+		landmarkScoreForBricks += 2;
 		++maxBricks;
 	}
 	if(score >= landmarkScoreForSpeed){
 		// console.log("landmarkScoreForSpeed : " + landmarkScoreForSpeed + " Reached");
 		// flags[1] = false;
-		speedY += 0.1;
+		speedY += 0.2;
 		landmarkScoreForSpeed += 1;
 	}
 	// console.log("affection = " + affection);
@@ -951,7 +951,7 @@ function ending(){
 
 function drawBackground(){
 	
-	var backgroundBalls = 'rgba(200, 200, 200, 0.4)';		
+	var backgroundBalls = grayTransparent;		
 				
 	ctx.save();
 	ctx.fillStyle = gray;
